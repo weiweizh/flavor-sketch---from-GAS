@@ -18,9 +18,18 @@
               'pencil-gray': '#4a4a4a',
             },
             fontFamily: {
-              'hand': ['"Playwrite GB J"', 'cursive'],
-              'hand-safe': ['"Patrick Hand"', 'cursive'],
-              'bubbly': ['"Titan One"', 'cursive'],
+              /* 
+                Stacking order: 
+                1. Playwrite GB J (English handwriting)
+                2. ChenYuluoyan (Chinese handwriting)
+                3. Patrick Hand (Fallback English)
+                4. Cursive (System fallback)
+              */
+              'hand': ['"Playwrite GB J"', '"ChenYuluoyan"', '"Patrick Hand"', 'cursive', 'sans-serif'],
+              /* For mixed input: Handwritten English, Standard Sans-Serif Chinese */
+              'hand-mixed': ['"Playwrite GB J"', 'sans-serif'],
+              'hand-safe': ['"Patrick Hand"', '"ChenYuluoyan"', 'cursive', 'sans-serif'],
+              'bubbly': ['"Titan One"', 'cursive', 'sans-serif'],
             },
             animation: {
               'scribble': 'scribble 0.5s ease-in-out infinite alternate',
@@ -36,10 +45,25 @@
       }
     </script>
     <style>
+      /* 
+         Defining the custom Chinese handwriting font "ChenYuluoyan" (辰宇落雁体).
+         Source: https://github.com/Chenyu-otf/chenyuluoyan_thin
+         Using jsDelivr CDN to serve the raw file from the main branch.
+         File: ChenYuluoyan-2.0-Thin.ttf
+      */
+      @font-face {
+        font-family: 'ChenYuluoyan';
+        src: url('https://cdn.jsdelivr.net/gh/Chenyu-otf/chenyuluoyan_thin@main/ChenYuluoyan-2.0-Thin.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+      
       body {
         background-color: #fdfbf7;
         color: #1a1a1a;
       }
+      
       /* Custom scrollbar to match aesthetic */
       ::-webkit-scrollbar {
         width: 8px;

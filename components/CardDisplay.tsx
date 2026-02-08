@@ -1,15 +1,17 @@
 import React, { useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
-import { CoffeeDetails } from '../types';
+import { CoffeeDetails, FlavorRatings } from '../types';
 
 interface CardDisplayProps {
   imageUrl: string | null;
+  backgroundColor?: string | null;
   loading: boolean;
   notes: string;
   details: CoffeeDetails;
+  ratings?: FlavorRatings;
 }
 
-export const CardDisplay: React.FC<CardDisplayProps> = ({ imageUrl, loading, notes, details }) => {
+export const CardDisplay: React.FC<CardDisplayProps> = ({ imageUrl, backgroundColor, loading, notes, details, ratings }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
 
@@ -39,6 +41,72 @@ export const CardDisplay: React.FC<CardDisplayProps> = ({ imageUrl, loading, not
     }
   };
 
+  const renderRatingDots = (value: number) => {
+    return (
+      <div className="flex gap-0.5">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div 
+            key={i} 
+            className={`w-1.5 h-1.5 rounded-full border border-ink-black ${i <= value ? 'bg-ink-black' : 'bg-transparent'}`} 
+          />
+        ))}
+      </div>
+    );
+  };
+
+  const getBrewIcon = (method: string) => {
+    const m = method.toLowerCase();
+    
+    // Espresso / Cappuccino (Cup-like)
+    if (m.includes('espresso') || m.includes('cappuccino') || m.includes('latte') || m.includes('macchiato') || m.includes('濃縮')) {
+      return (
+        <svg className="w-6 h-6 text-ink-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 8v9a3 3 0 003 3h6a3 3 0 003-3V8H6z" />
+          <path d="M6 8h12" />
+          <path d="M18 11h3a2 2 0 010 4h-3" />
+          <path d="M9 5l-1-2" />
+          <path d="M12 5l-1-2" />
+          <path d="M15 5l-1-2" />
+        </svg>
+      );
+    }
+
+    // Filter / Pour Over / Drip (V60/Cone-like)
+    if (m.includes('filter') || m.includes('pour') || m.includes('drip') || m.includes('chemex') || m.includes('v60') || m.includes('手沖')) {
+      return (
+        <svg className="w-6 h-6 text-ink-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 6l8 14 8-14H4z" />
+          <path d="M2 6h20" />
+          <path d="M12 20v2" />
+          <line x1="8" y1="12" x2="16" y2="12" strokeDasharray="1 3" />
+        </svg>
+      );
+    }
+
+    // Iced / Cold Brew (Tall glass with straw)
+    if (m.includes('iced') || m.includes('cold') || m.includes('frappe') || m.includes('冰')) {
+      return (
+        <svg className="w-6 h-6 text-ink-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M7 21h10V8H7v13z" />
+          <path d="M13 2l-2 20" />
+          <path d="M8 14l2 2" />
+          <path d="M14 18l2-2" />
+        </svg>
+      );
+    }
+    
+    // Default Mug
+    return (
+      <svg className="w-6 h-6 text-ink-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" />
+        <path d="M19 8h2a2 2 0 010 4h-2" />
+        <path d="M4 8h16" />
+        <path d="M9 4v2" />
+        <path d="M15 4v2" />
+      </svg>
+    );
+  };
+
   if (!imageUrl && !loading) {
     return (
       <div className="w-full max-w-sm aspect-[3/4] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mx-auto opacity-50">
@@ -55,8 +123,9 @@ export const CardDisplay: React.FC<CardDisplayProps> = ({ imageUrl, loading, not
         <div 
           id="flavor-card-capture"
           ref={cardRef}
-          className={`relative bg-warm-white p-4 transition-all duration-500 transform ${loading ? 'animate-scribble' : 'rotate-1'}`}
+          className={`relative p-4 transition-all duration-500 transform ${loading ? 'animate-scribble' : 'rotate-1'}`}
           style={{
+            backgroundColor: '#fdfbf7', // Fixed to warm white
             boxShadow: '8px 8px 15px rgba(0,0,0,0.15)',
             borderRadius: '2px',
             border: '1px solid #e5e5e5'
@@ -89,38 +158,77 @@ export const CardDisplay: React.FC<CardDisplayProps> = ({ imageUrl, loading, not
           <div className="border-t-2 border-dotted border-gray-300 pt-3">
              {/* Header: Name */}
              <div className="flex justify-between items-baseline mb-2">
-               <h3 className="font-hand text-2xl font-bold text-ink-black break-words mr-2 flex-1 leading-none">
+               <h3 className="font-hand text-xl font-bold text-ink-black break-words flex-1 leading-none">
                  {details.beanName || "Mystery Bean"}
                </h3>
-               <span className="font-hand-safe text-xs text-gray-400 whitespace-nowrap">
-                 #{Math.floor(Math.random() * 9999).toString().padStart(4, '0')}
-               </span>
+               {/* Display Brewing Method here if layout requires, but sticking to current layout for now */}
              </div>
 
-             {/* Grid Details */}
-             <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm font-hand mb-3">
+             {/* Sub-header: Roaster */}
+             {details.roaster && (
+               <div className="font-hand text-sm text-gray-500 mb-2 -mt-1 italic">
+                 by {details.roaster}
+               </div>
+             )}
+
+             {/* Grid Details (Headers updated to font-hand-safe [Patrick Hand] and uppercase abbreviations) */}
+             <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm font-hand mb-3">
                 <div className="flex items-baseline">
-                  <span className="font-hand-safe text-gray-500 w-12 flex-shrink-0 text-xs uppercase tracking-wider">Origin</span>
+                  <span className="font-hand-safe text-gray-500 w-16 flex-shrink-0 text-[10px] uppercase tracking-wider">ORIGIN</span>
                   <span className="text-ink-black border-b border-gray-200 flex-1 break-words leading-tight">{details.origin || "—"}</span>
                 </div>
                 <div className="flex items-baseline">
-                  <span className="font-hand-safe text-gray-500 w-10 flex-shrink-0 text-xs uppercase tracking-wider">Elev</span>
+                  <span className="font-hand-safe text-gray-500 w-16 flex-shrink-0 text-[10px] uppercase tracking-wider">ELEV</span>
                   <span className="text-ink-black border-b border-gray-200 flex-1 break-words leading-tight">{details.elevation || "—"}</span>
                 </div>
                 <div className="flex items-baseline">
-                  <span className="font-hand-safe text-gray-500 w-12 flex-shrink-0 text-xs uppercase tracking-wider">Proc</span>
+                  <span className="font-hand-safe text-gray-500 w-16 flex-shrink-0 text-[10px] uppercase tracking-wider">PROC</span>
                   <span className="text-ink-black border-b border-gray-200 flex-1 break-words leading-tight">{details.processMethod || "—"}</span>
                 </div>
                 <div className="flex items-baseline">
-                  <span className="font-hand-safe text-gray-500 w-10 flex-shrink-0 text-xs uppercase tracking-wider">Roast</span>
+                  <span className="font-hand-safe text-gray-500 w-16 flex-shrink-0 text-[10px] uppercase tracking-wider">ROAST</span>
                   <span className="text-ink-black border-b border-gray-200 flex-1 break-words leading-tight">{details.roastLevel || "—"}</span>
                 </div>
              </div>
 
+             {/* Ratings Grid (Headers updated) */}
+             {ratings && (
+               <div className="grid grid-cols-2 gap-x-4 gap-y-1 mb-3 pt-1 border-t border-dotted border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <span className="font-hand-safe text-[10px] text-gray-500 uppercase">SWEET</span>
+                    {renderRatingDots(ratings.sweetness)}
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-hand-safe text-[10px] text-gray-500 uppercase">ACIDITY</span>
+                    {renderRatingDots(ratings.acidity)}
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-hand-safe text-[10px] text-gray-500 uppercase">BITTER</span>
+                    {renderRatingDots(ratings.bitterness)}
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-hand-safe text-[10px] text-gray-500 uppercase">BODY</span>
+                    {renderRatingDots(ratings.body)}
+                  </div>
+               </div>
+             )}
+             
+             {/* Brewing Method Row */}
+             {details.brewingMethod && (
+               <div className="flex items-center gap-2 mb-2 pt-1 border-t border-dotted border-gray-200">
+                 <div className="flex-shrink-0 opacity-80">
+                   {getBrewIcon(details.brewingMethod)}
+                 </div>
+                 <span className="font-hand text-base text-ink-black leading-tight">
+                   {details.brewingMethod}
+                 </span>
+               </div>
+             )}
+
              {/* Flavor Notes Footer */}
              <div className="bg-yellow-50/50 p-2 rounded border border-yellow-100">
-               <span className="font-hand-safe text-xs text-gray-400 uppercase tracking-widest block mb-1">Tasting Notes</span>
-               <p className="font-hand text-lg leading-tight text-ink-black break-words">
+               <span className="font-hand-safe text-[10px] text-gray-400 uppercase tracking-widest block mb-1">TASTING NOTES</span>
+               <p className="font-hand text-base leading-tight text-ink-black break-words">
                  {notes || "..."}
                </p>
              </div>

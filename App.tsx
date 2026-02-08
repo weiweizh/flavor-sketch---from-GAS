@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { generateFlavorImage } from './services/geminiService';
+import { generateFlavorImage, translateToTC } from './services/geminiService';
 import { HandDrawnButton } from './components/HandDrawnButton';
 import { FlavorInput } from './components/FlavorInput';
 import { CardDisplay } from './components/CardDisplay';
-import { FlavorCardState, Preset, CoffeeDetails } from './types';
+import { FlavorCardState, Preset, CoffeeDetails, FlavorRatings } from './types';
 
 const PRESETS: Preset[] = [
   { id: '1', label: 'Ethiopian Style', notes: 'Jasmine, bergamot, apricot' },
@@ -12,20 +12,36 @@ const PRESETS: Preset[] = [
 ];
 
 const App: React.FC = () => {
-  const [flavorText, setFlavorText] = useState('');
+  const [flavorText, setFlavorText] = useState('Peach, Jasmine, White Tea');
   const [coffeeDetails, setCoffeeDetails] = useState<CoffeeDetails>({
-    beanName: '',
-    roastLevel: '',
-    processMethod: '',
-    origin: '',
-    elevation: '',
+    beanName: 'Elida DRD Washed',
+    roaster: 'Blendin',
+    brewingMethod: 'Filter',
+    roastLevel: 'light',
+    processMethod: 'DRD washed',
+    origin: 'Panama',
+    elevation: '2000msl',
+  });
+
+  const [ratings, setRatings] = useState<FlavorRatings>({
+    sweetness: 3,
+    acidity: 3,
+    bitterness: 2,
+    body: 3,
   });
 
   const [state, setState] = useState<FlavorCardState>({
     status: 'idle',
     imageUrl: null,
+    backgroundColor: null,
     errorMessage: null,
   });
+
+  // State to hold the translated data specifically for the card display
+  const [cardData, setCardData] = useState<{
+    notes: string;
+    details: CoffeeDetails;
+  } | null>(null);
 
   const handleGenerate = useCallback(async () => {
     if (!flavorText.trim()) return;
@@ -33,20 +49,33 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, status: 'generating', errorMessage: null }));
 
     try {
-      const imageUrl = await generateFlavorImage(flavorText);
+      // Execute Image Generation and Text Translation in parallel for speed
+      const [imageResult, translationResult] = await Promise.all([
+        generateFlavorImage(flavorText),
+        translateToTC(flavorText, coffeeDetails)
+      ]);
+
+      setCardData({
+        notes: translationResult.notes,
+        details: translationResult.details
+      });
+
       setState({
         status: 'success',
-        imageUrl,
+        imageUrl: imageResult.imageUrl,
+        backgroundColor: imageResult.backgroundColor,
         errorMessage: null,
       });
     } catch (error: any) {
+      console.error(error);
       setState({
         status: 'error',
         imageUrl: null,
+        backgroundColor: null,
         errorMessage: error.message || 'Something went wrong while drawing.',
       });
     }
-  }, [flavorText]);
+  }, [flavorText, coffeeDetails]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -64,18 +93,22 @@ const App: React.FC = () => {
     setCoffeeDetails(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleRatingChange = (name: keyof FlavorRatings, value: number) => {
+    setRatings(prev => ({ ...prev, [name]: value }));
+  };
+
   return (
     <div className="min-h-screen w-full flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8 font-hand text-ink-black selection:bg-yellow-200">
       
       {/* Header */}
       <header className="mb-12 text-center relative">
-        <h1 className="text-6xl font-bold mb-2 tracking-wide font-hand" style={{ textShadow: '2px 2px 0px rgba(0,0,0,0.1)' }}>
+        <h1 className="text-2xl font-bold mb-2 tracking-wide font-hand" style={{ textShadow: '1px 1px 0px rgba(0,0,0,0.1)' }}>
           Flavor Sketch
         </h1>
         
         {/* Decorative underlines */}
-        <svg className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-48 h-4 text-ink-black opacity-80" viewBox="0 0 200 20" preserveAspectRatio="none">
-          <path d="M5 10 Q 50 20 90 10 T 195 10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        <svg className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-32 h-3 text-ink-black opacity-60" viewBox="0 0 200 20" preserveAspectRatio="none">
+          <path d="M5 10 Q 50 20 90 10 T 195 10" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
         </svg>
       </header>
 
@@ -87,8 +120,10 @@ const App: React.FC = () => {
           <FlavorInput 
             value={flavorText}
             details={coffeeDetails}
+            ratings={ratings}
             onChange={(e) => setFlavorText(e.target.value)}
             onDetailChange={handleDetailChange}
+            onRatingChange={handleRatingChange}
             onKeyDown={handleKeyDown}
           />
 
@@ -131,16 +166,19 @@ const App: React.FC = () => {
         <div className="flex justify-center items-start lg:mt-8 w-full">
            <CardDisplay 
              imageUrl={state.imageUrl}
+             backgroundColor={state.backgroundColor}
              loading={state.status === 'generating'}
-             notes={flavorText || 'Flavor Card'}
-             details={coffeeDetails}
+             // If we have generated (translated) cardData, use it. Otherwise fallback to live input.
+             notes={cardData ? cardData.notes : (flavorText || 'Flavor Card')}
+             details={cardData ? cardData.details : coffeeDetails}
+             ratings={ratings}
            />
         </div>
 
       </main>
 
       <footer className="mt-auto pt-12 text-gray-400 text-sm font-hand-safe">
-        <p>Powered by Gemini 2.5 Flash Image</p>
+        <p>Powered by Gemini 2.5 Flash Image & Gemini 3 Flash</p>
       </footer>
     </div>
   );
