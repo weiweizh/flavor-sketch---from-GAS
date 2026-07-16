@@ -4,10 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Flavor Sketch</title>
+    <script>
+      // Polyfill process.env to avoid ReferenceError in browser environments
+      window.process = window.process || { env: {} };
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Playwrite+GB+J:ital,wght@0,100..400;1,100..400&family=Titan+One&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Patrick+Hand&family=Fredericka+the+Great&display=swap" rel="stylesheet" crossorigin="anonymous">
     <script>
       tailwind.config = {
         theme: {
@@ -20,16 +24,16 @@
             fontFamily: {
               /* 
                 Stacking order: 
-                1. Playwrite GB J (English handwriting)
+                1. Caveat (English handwriting)
                 2. ChenYuluoyan (Chinese handwriting)
                 3. Patrick Hand (Fallback English)
                 4. Cursive (System fallback)
               */
-              'hand': ['"Playwrite GB J"', '"ChenYuluoyan"', '"Patrick Hand"', 'cursive', 'sans-serif'],
+              'hand': ['"Caveat"', '"ChenYuluoyan"', '"Patrick Hand"', 'cursive', 'sans-serif'],
               /* For mixed input: Handwritten English, Standard Sans-Serif Chinese */
-              'hand-mixed': ['"Playwrite GB J"', 'sans-serif'],
-              'hand-safe': ['"Patrick Hand"', '"ChenYuluoyan"', 'cursive', 'sans-serif'],
-              'bubbly': ['"Titan One"', 'cursive', 'sans-serif'],
+              'hand-mixed': ['"Caveat"', 'sans-serif'],
+              'hand-safe': ['"Caveat"', '"Patrick Hand"', '"ChenYuluoyan"', 'cursive', 'sans-serif'],
+              'fredericka': ['"Fredericka the Great"', 'cursive', 'sans-serif'],
             },
             animation: {
               'scribble': 'scribble 0.5s ease-in-out infinite alternate',
@@ -60,7 +64,7 @@
       }
       
       body {
-        background-color: #fdfbf7;
+        background-color: #f5f5f4; /* Light gray base */
         color: #1a1a1a;
       }
       
@@ -75,6 +79,12 @@
         background: #1a1a1a; 
         border-radius: 4px;
       }
+      
+      .paper-texture {
+        background-image: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)), url("/paper.jpg");
+        background-size: cover;
+        background-blend-mode: normal;
+      }
     </style>
   <script type="importmap">
 {
@@ -87,8 +97,10 @@
   }
 }
 </script>
+<link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root"></div>
-  </body>
+  <script type="module" src="/index.tsx"></script>
+</body>
 </html>

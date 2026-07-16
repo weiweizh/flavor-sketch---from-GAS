@@ -19,6 +19,7 @@ export interface CoffeeDetails {
   processMethod: string;
   origin: string;
   elevation: string;
+  varieties: string;
 }
 
 export interface FlavorRatings {
@@ -26,4 +27,17 @@ export interface FlavorRatings {
   acidity: number;
   bitterness: number;
   body: number;
+  aroma: number;
+  aftertaste: number;
+}
+
+declare global {
+  interface Window {
+    // Fixed: Removed conflicting 'aistudio' property declaration. It is already declared globally as 'AIStudio'.
+    process?: {
+      env: {
+        [key: string]: string | undefined;
+      };
+    };
+  }
 }
